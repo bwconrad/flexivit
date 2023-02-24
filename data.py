@@ -7,6 +7,7 @@ import pyarrow as pa
 import pytorch_lightning as pl
 import six
 from PIL import Image
+from timm.data.transforms_factory import transforms_imagenet_eval
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.datasets import (CIFAR10, CIFAR100, DTD, STL10, FGVCAircraft,
@@ -33,8 +34,9 @@ class DataModule(pl.LightningDataModule):
         dataset: str = "cifar10",
         root: str = "data/",
         num_classes: Optional[int] = None,
-        size: int = 256,
-        crop: int = 224,
+        size: int = 224,
+        crop_pct: float = 1.0,
+        interpolation: str = "bicubic",
         mean: Sequence = (0.485, 0.456, 0.406),
         std: Sequence = (0.229, 0.224, 0.225),
         batch_size: int = 256,
@@ -47,8 +49,8 @@ class DataModule(pl.LightningDataModule):
                      food101, pets37, stl10, dtd, aircraft, cars]
             root: Download path for built-in datasets or path to dataset directory for custom datasets
             num_classes: Number of classes when using a custom dataset
-            size: Size after resize
-            crop: Size of center crop
+            size: Image size
+            crop_pct: Center crop percentage
             mean: Normalization means
             std: Normalization standard deviations
             batch_size: Number of batch samples
@@ -59,7 +61,8 @@ class DataModule(pl.LightningDataModule):
         self.dataset = dataset
         self.root = root
         self.size = size
-        self.crop = crop
+        self.crop_pct = crop_pct
+        self.interpolation = interpolation
         self.mean = mean
         self.std = std
         self.batch_size = batch_size
@@ -91,16 +94,12 @@ class DataModule(pl.LightningDataModule):
                     f"{dataset} is not an available dataset. Should be one of {[k for k in DATASET_DICT.keys()]}"
                 )
 
-        self.transforms = transforms.Compose(
-            [
-                transforms.Resize(
-                    (self.size, self.size),
-                    interpolation=InterpolationMode.BICUBIC,
-                ),
-                transforms.CenterCrop((self.crop, self.crop)),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=self.mean, std=self.std),
-            ]
+        self.transforms = transforms_imagenet_eval(
+            img_size=self.size,
+            crop_pct=self.crop_pct,
+            interpolation=self.interpolation,
+            mean=self.mean,
+            std=self.std,
         )
 
     def prepare_data(self):
