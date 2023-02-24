@@ -1,6 +1,8 @@
 import pytorch_lightning as pl
+import timm.models
 import torch
 from pytorch_lightning.cli import LightningArgumentParser
+from timm import create_model
 # from timm.layers.patch_embed import \
 #     resample_patch_embed as flexi_resample_patch_embed
 from timm.layers.pos_embed import resample_abs_pos_embed
@@ -16,7 +18,6 @@ class ClassificationEvaluator(pl.LightningModule):
     def __init__(
         self,
         weights: str,
-        weights_prefix: str = "",
         n_classes: int = 10,
         image_size: int = 224,
         patch_size: int = 16,
@@ -25,8 +26,7 @@ class ClassificationEvaluator(pl.LightningModule):
         """Classification Evaluator
 
         Args:
-            weights: Path to weights
-            weights_prefix: Parameter prefix to strip from weights
+            weights: Name of model weights
             n_classes: Number of target class.
             image_size: Size of input images
             patch_size: Resized patch size
@@ -35,43 +35,24 @@ class ClassificationEvaluator(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.weights = weights
-        self.weights_prefix = weights_prefix
         self.n_classes = n_classes
         self.image_size = image_size
         self.patch_size = patch_size
         self.resample_type = resample_type
 
-        # Initialize model with target patch and image sizes
-        self.net = VisionTransformer(
-            img_size=self.image_size,
-            patch_size=self.patch_size,
-            num_classes=self.n_classes,
-            embed_dim=768,
-            depth=12,
-            num_heads=12,
-        )
-
         # Load original weights
-        print(f"Loading weights from {self.weights}")
-        state_dict = torch.load(self.weights)
-
-        # Remove prefix from key names
-        if self.weights_prefix:
-            new_state_dict = {}
-            for k, v in state_dict.items():
-                if k.startswith(self.weights_prefix):
-                    k = k.replace(self.weights_prefix + ".", "")
-                    new_state_dict[k] = v
-            state_dict = new_state_dict
+        print(f"Loading weights {self.weights}")
+        orig_net = create_model(self.weights, pretrained=True)
+        state_dict = orig_net.state_dict()
 
         # Adjust patch embedding
         if self.resample_type == "flexi":
-            patch_embed = flexi_resample_patch_embed(
+            state_dict["patch_embed.proj.weight"] = flexi_resample_patch_embed(
                 state_dict["patch_embed.proj.weight"],
                 (self.patch_size, self.patch_size),
             )
         elif self.resample_type == "interpolate":
-            patch_embed = interpolate_resample_patch_embed(
+            state_dict["patch_embed.proj.weight"] = interpolate_resample_patch_embed(
                 state_dict["patch_embed.proj.weight"],
                 (self.patch_size, self.patch_size),
             )
@@ -79,16 +60,20 @@ class ClassificationEvaluator(pl.LightningModule):
             raise ValueError(
                 f"{self.resample_type} is not a valid value for --model.resample_type. Should be one of ['flex', 'interpolate']"
             )
-        state_dict["patch_embed.proj.weight"] = patch_embed
 
         # Adjust position embedding
         grid_size = self.image_size // self.patch_size
-        pos_embed = resample_abs_pos_embed(
+        state_dict["pos_embed"] = resample_abs_pos_embed(
             state_dict["pos_embed"], new_size=[grid_size, grid_size]
         )
-        state_dict["pos_embed"] = pos_embed
 
-        # Load new weights
+        # Load adjusted weights into model with target patch and image sizes
+        model_fn = getattr(timm.models, orig_net.default_cfg["architecture"])
+        self.net = model_fn(
+            img_size=self.image_size,
+            patch_size=self.patch_size,
+            num_classes=self.n_classes,
+        )
         self.net.load_state_dict(state_dict, strict=True)
 
         # Define metrics
@@ -127,7 +112,7 @@ if __name__ == "__main__":
 
     dm = DataModule(**args["data"])
     args["model"]["n_classes"] = dm.num_classes
-    args["model"]["image_size"] = dm.crop
+    args["model"]["image_size"] = dm.size
     model = ClassificationEvaluator(**args["model"])
     trainer = pl.Trainer.from_argparse_args(args)
 
