@@ -1,0 +1,14 @@
+absl==0.0
+absl_py==1.4.0
+einops==0.6.0
+functorch==1.13.1
+lmdb==1.4.0
+numpy==1.23.3
+Pillow==9.4.0
+pyarrow==11.0.0
+pytorch_lightning[extra]==1.9.0
+six==1.16.0
+timm==0.8.10.dev0
+torch==1.13.1
+torchmetrics==0.11.1
+torchvision==0.14.1
