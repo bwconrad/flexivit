@@ -1,3 +1,6 @@
+import os
+
+import pandas as pd
 import pytorch_lightning as pl
 import timm.models
 from pytorch_lightning.cli import LightningArgumentParser
@@ -18,6 +21,7 @@ class ClassificationEvaluator(pl.LightningModule):
         image_size: int = 224,
         patch_size: int = 16,
         resample_type: str = "flexi",
+        results_path: str = "",
     ):
         """Classification Evaluator
 
@@ -27,6 +31,7 @@ class ClassificationEvaluator(pl.LightningModule):
             image_size: Size of input images
             patch_size: Resized patch size
             resample_type: Patch embed resampling method. One of ["flexi", "interpolate"]
+            results_path: Path to write evaluation results. Does not write results if empty
         """
         super().__init__()
         self.save_hyperparameters()
@@ -35,6 +40,7 @@ class ClassificationEvaluator(pl.LightningModule):
         self.image_size = image_size
         self.patch_size = patch_size
         self.resample_type = resample_type
+        self.results_path = results_path
 
         # Load original weights
         print(f"Loading weights {self.weights}")
@@ -54,7 +60,7 @@ class ClassificationEvaluator(pl.LightningModule):
             )
         else:
             raise ValueError(
-                f"{self.resample_type} is not a valid value for --model.resample_type. Should be one of ['flex', 'interpolate']"
+                f"{self.resample_type} is not a valid value for --model.resample_type. Should be one of ['flexi', 'interpolate']"
             )
 
         # Adjust position embedding
@@ -91,11 +97,26 @@ class ClassificationEvaluator(pl.LightningModule):
         # Get accuracy
         acc = self.acc(pred, y)
 
-        # Log
-        self.log(f"test_loss", loss)
-        self.log(f"test_acc", acc)
-
         return loss
+
+    def test_epoch_end(self, _) -> None:
+        if self.results_path:
+            acc = self.acc.compute().detach().cpu().item()
+            results = pd.DataFrame(
+                {
+                    "model": [self.weights],
+                    "acc": [round(acc, 4)],
+                    "patch_size": [self.patch_size],
+                    "image_size": [self.image_size],
+                    "resample_type": [self.resample_type],
+                }
+            )
+
+            results.to_csv(
+                self.results_path,
+                mode="a",
+                header=not os.path.exists(self.results_path),
+            )
 
 
 if __name__ == "__main__":

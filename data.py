@@ -9,11 +9,9 @@ import six
 from PIL import Image
 from timm.data.transforms_factory import transforms_imagenet_eval
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
 from torchvision.datasets import (CIFAR10, CIFAR100, DTD, STL10, FGVCAircraft,
                                   Flowers102, Food101, ImageFolder,
                                   OxfordIIITPet, StanfordCars)
-from torchvision.transforms import InterpolationMode
 
 DATASET_DICT = {
     "cifar10": [partial(CIFAR10, train=False, download=True), 10],
