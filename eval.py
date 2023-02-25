@@ -97,6 +97,10 @@ class ClassificationEvaluator(pl.LightningModule):
         # Get accuracy
         acc = self.acc(pred, y)
 
+        # Log
+        self.log(f"test_loss", loss)
+        self.log(f"test_acc", acc)
+
         return loss
 
     def test_epoch_end(self, _) -> None:
