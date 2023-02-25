@@ -1,12 +1,8 @@
 import pytorch_lightning as pl
 import timm.models
-import torch
 from pytorch_lightning.cli import LightningArgumentParser
 from timm import create_model
-# from timm.layers.patch_embed import \
-#     resample_patch_embed as flexi_resample_patch_embed
 from timm.layers.pos_embed import resample_abs_pos_embed
-from timm.models.vision_transformer import VisionTransformer
 from torch.nn import CrossEntropyLoss
 from torchmetrics.classification.accuracy import Accuracy
 
