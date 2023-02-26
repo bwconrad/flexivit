@@ -1,12 +1,14 @@
 import os
 from functools import partial
-from typing import Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, Union
 
 import lmdb
 import pyarrow as pa
 import pytorch_lightning as pl
 import six
 from PIL import Image
+from timm.data import (IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD,
+                       OPENAI_CLIP_MEAN, OPENAI_CLIP_STD)
 from timm.data.transforms_factory import transforms_imagenet_eval
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import (CIFAR10, CIFAR100, DTD, STL10, FGVCAircraft,
@@ -35,8 +37,8 @@ class DataModule(pl.LightningDataModule):
         size: int = 224,
         crop_pct: float = 1.0,
         interpolation: str = "bicubic",
-        mean: Sequence = (0.485, 0.456, 0.406),
-        std: Sequence = (0.229, 0.224, 0.225),
+        mean: Union[Sequence, str] = (0.485, 0.456, 0.406),
+        std: Union[Sequence, str] = (0.229, 0.224, 0.225),
         batch_size: int = 256,
         workers: int = 4,
     ):
@@ -49,8 +51,8 @@ class DataModule(pl.LightningDataModule):
             num_classes: Number of classes when using a custom dataset
             size: Image size
             crop_pct: Center crop percentage
-            mean: Normalization means
-            std: Normalization standard deviations
+            mean: Normalization means. Can be 'clip' or 'imagenet' to use the respective defaults
+            std: Normalization standard deviations. Can be 'clip' or 'imagenet' to use the respective defaults
             batch_size: Number of batch samples
             workers: Number of data loader workers
         """
@@ -61,10 +63,22 @@ class DataModule(pl.LightningDataModule):
         self.size = size
         self.crop_pct = crop_pct
         self.interpolation = interpolation
-        self.mean = mean
-        self.std = std
         self.batch_size = batch_size
         self.workers = workers
+
+        if mean == "clip":
+            self.mean = OPENAI_CLIP_MEAN
+        elif mean == "imagenet":
+            self.mean = IMAGENET_DEFAULT_MEAN
+        else:
+            self.mean = mean
+
+        if std == "clip":
+            self.std = OPENAI_CLIP_STD
+        elif std == "imagenet":
+            self.std = IMAGENET_DEFAULT_STD
+        else:
+            self.std = std
 
         # Define dataset
         if self.dataset == "custom":
