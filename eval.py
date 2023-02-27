@@ -104,7 +104,7 @@ class ClassificationEvaluator(pl.LightningModule):
 
         return loss
 
-    def test_epoch_end(self, _) -> None:
+    def test_epoch_end(self, _):
         if self.results_path:
             acc = self.acc.compute().detach().cpu().item()
             results = pd.DataFrame(
@@ -113,7 +113,7 @@ class ClassificationEvaluator(pl.LightningModule):
                     "acc": [round(acc, 4)],
                     "patch_size": [self.patch_size],
                     "image_size": [self.image_size],
-                    "resample_type": [self.resize_type],
+                    "resize_type": [self.resize_type],
                 }
             )
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_lightning_class_args(DataModule, "data")
     parser.add_lightning_class_args(ClassificationEvaluator, "model")
     args = parser.parse_args()
-    args["logger"] = False  # Disable logging
+    args["logger"] = False  # Disable logging artifacts
 
     dm = DataModule(**args["data"])
     args["model"]["n_classes"] = dm.num_classes
