@@ -10,7 +10,8 @@ from torch.nn import CrossEntropyLoss
 from torchmetrics.classification.accuracy import Accuracy
 
 from data import DataModule
-from flexi import flexi_resample_patch_embed, interpolate_resample_patch_embed
+from flexivit_pytorch import (interpolate_resize_patch_embed,
+                              pi_resize_patch_embed)
 
 
 class ClassificationEvaluator(pl.LightningModule):
@@ -20,7 +21,7 @@ class ClassificationEvaluator(pl.LightningModule):
         n_classes: int = 10,
         image_size: int = 224,
         patch_size: int = 16,
-        resample_type: str = "flexi",
+        resize_type: str = "pi",
         results_path: str = "",
     ):
         """Classification Evaluator
@@ -30,7 +31,7 @@ class ClassificationEvaluator(pl.LightningModule):
             n_classes: Number of target class.
             image_size: Size of input images
             patch_size: Resized patch size
-            resample_type: Patch embed resampling method. One of ["flexi", "interpolate"]
+            resize_type: Patch embed resize method. One of ["pi", "interpolate"]
             results_path: Path to write evaluation results. Does not write results if empty
         """
         super().__init__()
@@ -39,7 +40,7 @@ class ClassificationEvaluator(pl.LightningModule):
         self.n_classes = n_classes
         self.image_size = image_size
         self.patch_size = patch_size
-        self.resample_type = resample_type
+        self.resize_type = resize_type
         self.results_path = results_path
 
         # Load original weights
@@ -48,19 +49,19 @@ class ClassificationEvaluator(pl.LightningModule):
         state_dict = orig_net.state_dict()
 
         # Adjust patch embedding
-        if self.resample_type == "flexi":
-            state_dict["patch_embed.proj.weight"] = flexi_resample_patch_embed(
+        if self.resize_type == "pi":
+            state_dict["patch_embed.proj.weight"] = pi_resize_patch_embed(
                 state_dict["patch_embed.proj.weight"],
                 (self.patch_size, self.patch_size),
             )
-        elif self.resample_type == "interpolate":
-            state_dict["patch_embed.proj.weight"] = interpolate_resample_patch_embed(
+        elif self.resize_type == "interpolate":
+            state_dict["patch_embed.proj.weight"] = interpolate_resize_patch_embed(
                 state_dict["patch_embed.proj.weight"],
                 (self.patch_size, self.patch_size),
             )
         else:
             raise ValueError(
-                f"{self.resample_type} is not a valid value for --model.resample_type. Should be one of ['flexi', 'interpolate']"
+                f"{self.resize_type} is not a valid value for --model.resample_type. Should be one of ['flexi', 'interpolate']"
             )
 
         # Adjust position embedding
@@ -112,9 +113,12 @@ class ClassificationEvaluator(pl.LightningModule):
                     "acc": [round(acc, 4)],
                     "patch_size": [self.patch_size],
                     "image_size": [self.image_size],
-                    "resample_type": [self.resample_type],
+                    "resample_type": [self.resize_type],
                 }
             )
+
+            if not os.path.exists(os.path.dirname(self.results_path)):
+                os.makedirs(os.path.dirname(self.results_path))
 
             results.to_csv(
                 self.results_path,

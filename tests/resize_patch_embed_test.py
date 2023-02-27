@@ -2,10 +2,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from absl.testing import absltest
-from timm.layers.patch_embed import \
-    resample_patch_embed as flexi_resample_patch_embed
 
-# from flexi import flexi_resample_patch_embed
+from flexivit_pytorch import pi_resize_patch_embed
 
 
 class PatchEmbedTest(absltest.TestCase):
@@ -25,7 +23,7 @@ class PatchEmbedTest(absltest.TestCase):
 
         # New shape
         patches_resized = F.interpolate(patches, resized_patch_size, mode="bilinear")
-        w_emb_resampled = flexi_resample_patch_embed(
+        w_emb_resampled = pi_resize_patch_embed(
             w_emb, resized_patch_size, interpolation="bilinear", antialias=True
         )
         self.assertEqual(w_emb_resampled.shape, new_shape)
@@ -75,7 +73,7 @@ class PatchEmbedTest(absltest.TestCase):
 
     def _test_works(self, old_shape, new_shape):
         old = torch.randn(*old_shape)
-        resampled = flexi_resample_patch_embed(old, new_shape[2:])
+        resampled = pi_resize_patch_embed(old, new_shape[2:])
         self.assertEqual(resampled.shape, new_shape)
         self.assertEqual(resampled.dtype, old.dtype)
 
@@ -93,7 +91,7 @@ class PatchEmbedTest(absltest.TestCase):
     def _test_raises(self, old_shape, new_shape):
         old = torch.randn(*old_shape)
         with self.assertRaises(AssertionError):
-            flexi_resample_patch_embed(old, new_shape)
+            pi_resize_patch_embed(old, new_shape)
 
     def test_raises_incorrect_dims(self):
         old_shape = (256, 3, 8, 10)
