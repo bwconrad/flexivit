@@ -1,7 +1,7 @@
 import collections.abc
 import math
 from itertools import repeat
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
@@ -16,7 +16,7 @@ def to_2tuple(x: Any) -> Tuple:
 def resize_abs_pos_embed(
     pos_embed: torch.Tensor,
     new_size: Tuple[int, int],
-    old_size: Optional[Tuple[int, int]] = None,
+    old_size: Optional[Union[int, Tuple[int, int]]] = None,
     num_prefix_tokens: int = 1,
     interpolation: str = "bicubic",
     antialias: bool = True,
