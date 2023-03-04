@@ -7,7 +7,8 @@ import torch.nn.functional as F
 from einops import rearrange
 from functorch import vmap
 from torch import Tensor
-from utils import to_2tuple
+
+from flexivit_pytorch.utils import to_2tuple
 
 
 def pi_resize_patch_embed(

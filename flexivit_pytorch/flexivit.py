@@ -5,7 +5,8 @@ import torch
 from patch_embed import FlexiPatchEmbed
 from timm.models.vision_transformer import Block, VisionTransformer
 from torch import Tensor, nn
-from utils import resize_abs_pos_embed, to_2tuple
+
+from flexivit_pytorch.utils import resize_abs_pos_embed, to_2tuple
 
 
 class FlexiViT(VisionTransformer):
