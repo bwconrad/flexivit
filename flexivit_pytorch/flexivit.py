@@ -2,14 +2,14 @@ from functools import partial
 from typing import Optional, Sequence, Tuple, Union
 
 import torch
-from patch_embed import FlexiPatchEmbed
 from timm.models.vision_transformer import Block, VisionTransformer
 from torch import Tensor, nn
 
+from flexivit_pytorch.patch_embed import FlexiPatchEmbed
 from flexivit_pytorch.utils import resize_abs_pos_embed, to_2tuple
 
 
-class FlexiViT(VisionTransformer):
+class FlexiVisionTransformer(VisionTransformer):
     def __init__(
         self,
         img_size: int = 240,
@@ -77,7 +77,7 @@ class FlexiViT(VisionTransformer):
 
         assert embed_layer == FlexiPatchEmbed, "embed_layer should be a FlexiPatchEmbed"
 
-        # Pre-initialize the flexi specific arguments
+        # Pre-initialize the flexi specific patch embed arguments
         embed_layer_fn = partial(
             FlexiPatchEmbed,
             patch_size_seq=patch_size_seq,
@@ -163,38 +163,21 @@ class FlexiViT(VisionTransformer):
         return x
 
 
-def flexivit_tiny(**kwargs) -> FlexiViT:
-    return FlexiViT(embed_dim=192, depth=12, num_heads=3, **kwargs)
+def flexivit_tiny(**kwargs) -> FlexiVisionTransformer:
+    return FlexiVisionTransformer(embed_dim=192, depth=12, num_heads=3, **kwargs)
 
 
-def flexivit_small(**kwargs) -> FlexiViT:
-    return FlexiViT(embed_dim=384, depth=12, num_heads=6, **kwargs)
+def flexivit_small(**kwargs) -> FlexiVisionTransformer:
+    return FlexiVisionTransformer(embed_dim=384, depth=12, num_heads=6, **kwargs)
 
 
-def flexivit_base(**kwargs) -> FlexiViT:
-    return FlexiViT(embed_dim=768, depth=12, num_heads=12, **kwargs)
+def flexivit_base(**kwargs) -> FlexiVisionTransformer:
+    return FlexiVisionTransformer(embed_dim=768, depth=12, num_heads=12, **kwargs)
 
 
-def flexivit_large(**kwargs) -> FlexiViT:
-    return FlexiViT(embed_dim=1024, depth=24, num_heads=16, **kwargs)
+def flexivit_large(**kwargs) -> FlexiVisionTransformer:
+    return FlexiVisionTransformer(embed_dim=1024, depth=24, num_heads=16, **kwargs)
 
 
-def flexivit_huge(**kwargs) -> FlexiViT:
-    return FlexiViT(embed_dim=1280, depth=32, num_heads=16, **kwargs)
-
-
-if __name__ == "__main__":
-    x = torch.rand(2, 3, 224, 224)
-    x = x.cuda()
-    f = flexivit_tiny(img_size=224)
-    f = f.cuda()
-    import time
-
-    # from timm import create_model
-    # f = create_model("vit_tiny_patch16_224", img_size=240, patch_size=16).cuda()
-
-    s = time.time()
-    for i in range(100):
-        f(x)
-
-    print(time.time() - s)
+def flexivit_huge(**kwargs) -> FlexiVisionTransformer:
+    return FlexiVisionTransformer(embed_dim=1280, depth=32, num_heads=16, **kwargs)
