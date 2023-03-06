@@ -155,13 +155,17 @@ class FlexiPatchEmbed(nn.Module):
         self.antialias = antialias
 
         self.patch_size_seq = patch_size_seq
-        if not patch_size_probs:
-            n = len(self.patch_size_seq)
-            self.patch_size_probs = [1.0 / n] * n
+
+        if self.patch_size_seq:
+            if not patch_size_probs:
+                n = len(self.patch_size_seq)
+                self.patch_size_probs = [1.0 / n] * n
+            else:
+                self.patch_size_probs = [
+                    p / sum(patch_size_probs) for p in patch_size_probs
+                ]
         else:
-            self.patch_size_probs = [
-                p / sum(patch_size_probs) for p in patch_size_probs
-            ]
+            self.patch_size_probs = []
 
         # Pre-calculate pinvs
         self.pinvs = self._cache_pinvs()
@@ -254,25 +258,3 @@ class FlexiPatchEmbed(nn.Module):
             return x, patch_size
 
         return x
-
-
-if __name__ == "__main__":
-    # w = torch.randn([256, 1, 16, 16])
-    # out1 = pi_resize_patch_embed(w, (32, 32))
-    # out2 = interpolate_resize_patch_embed(w, (32, 32))
-    # print(out1.size())
-    # print(out2.size())
-
-    import time
-
-    from timm.layers.patch_embed import PatchEmbed
-
-    x = torch.rand(128, 3, 240, 240).cuda()
-    pe = FlexiPatchEmbed(patch_size_seq=(10, 15, 20), patch_size_probs=(1, 3, 2)).cuda()
-    # pe = PatchEmbed(img_size=240, patch_size=16).cuda()
-
-    s = time.time()
-    for i in range(100):
-        y = pe(x)
-
-    print(time.time() - s)
