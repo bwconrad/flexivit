@@ -36,7 +36,7 @@ class FlexiVisionTransformer(VisionTransformer):
         norm_layer: Optional[nn.Module] = None,
         act_layer: Optional[nn.Module] = None,
         block_fn: nn.Module = Block,  # type:ignore
-        patch_size_seq: Sequence[int] = (8, 10, 12, 15, 16, 20, 14, 30, 40, 48),
+        patch_size_seq: Sequence[int] = (8, 10, 12, 15, 16, 20, 24, 30, 40, 48),
         base_pos_embed_size: Union[int, Tuple[int, int]] = 7,
         patch_size_probs: Optional[Sequence[float]] = None,
         interpolation: str = "bicubic",

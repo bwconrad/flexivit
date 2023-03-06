@@ -110,7 +110,7 @@ class FlexiPatchEmbed(nn.Module):
         norm_layer: Optional[nn.Module] = None,
         flatten: bool = True,
         bias: bool = True,
-        patch_size_seq: Sequence[int] = (8, 10, 12, 15, 16, 20, 14, 30, 40, 48),
+        patch_size_seq: Sequence[int] = (8, 10, 12, 15, 16, 20, 24, 30, 40, 48),
         patch_size_probs: Optional[Sequence[float]] = None,
         interpolation: str = "bicubic",
         antialias: bool = True,
