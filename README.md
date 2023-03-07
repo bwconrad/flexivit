@@ -3,15 +3,63 @@
 PyTorch reimplementation of ["FlexiViT: One Model for All Patch Sizes"](https://arxiv.org/abs/2212.08013).
 
 <p align="center">
-<img src="assets/flexi.png" width="50%" style={text-align: center;}/>
+<img src="https://raw.githubusercontent.com/bwconrad/flexivit/main/assets/flexi.png" width="50%" style={text-align: center;}/>
 </p>
 
-## Requirements
-- Python 3.8+
-- `pip install -r requirements`
+## Installation
+
+```
+pip install flexivit-pytorch
+```
+
+Or install the entire repo with:
+
+```
+git clone https://github.com/bwconrad/flexivit
+cd flexivit/
+pip install -r requirements.txt
+```
 
 ## Usage
-Here is a basic example of resizing the patch embedding layer of a pretrained model using the timm library:
+
+#### Basic Usage
+```python
+import torch
+from flexivit_pytorch import FlexiVisionTransformer
+
+net = FlexiVisionTransformer(
+    img_size=240,
+    base_patch_size=32,
+    num_classes=1000,
+    embed_dim=768,
+    depth=12,
+    num_heads=12,
+    mlp_ratio=4,
+    patch_size_seq=(8, 10, 12, 15, 16, 20, 14, 30, 40, 48),
+    base_pos_embed_size=7,
+)
+
+img = torch.randn(1, 3, 240, 240)
+preds = net(x)
+```
+
+You can also use default network configurations with:
+
+```python
+from flexivit_pytorch import (flexivit_base, flexivit_huge, flexivit_large,
+                              flexivit_small, flexivit_tiny)
+
+net = flexivit_tiny()
+net = flexivit_small()
+net = flexivit_base()
+net = flexivit_large()
+net = flexivit_huge()
+```
+
+#### Resizing Pretrained Model Weights
+
+You can resize the patch embedding layer of a standard pretrained vision transformer to any patch size. A basic example 
+of doing this with the `timm` library is the following:
 
 ```python
 from timm import create_model
@@ -42,8 +90,8 @@ net = create_model(
 net.load_state_dict(state_dict, strict=True)
 ```
 
-### Conversion Script
-The patch embedding layer from a model checkpoint can be resized using `convert_patch_embed.py`. For example, to resize to a patch size of 20:
+##### Conversion Script
+`convert_patch_embed.py` can similarity do the resizing on any local model checkpoint file. For example, to resize to a patch size of 20:
 ```
 python convert_patch_embed.py -i vit-16.pt -o vit-20.pt -n patch_embed.proj.weight -ps 20 
 ```
@@ -51,14 +99,29 @@ or to a patch size of height 10 and width 15:
 ```
 python convert_patch_embed.py -i vit-16.pt -o vit-10-15.pt -n patch_embed.proj.weight -ps 10 15
 ```
-The `-n` argument corresponds to the name of patch embedding weights in the checkpoint's state dict.
+- __Note:__ The `-n` argument corresponds to the name of patch embedding weights in the checkpoint's state dict.
+
+### Evaluation Script
+`eval.py` can be used to evaluate pretrained Vision Transformer models with different patch sizes. For example, to evaluate a ViT-B/16 at a patch size of 20 on the ImageNet-1k validation set, you can run:
+```
+python eval.py --accelerator gpu --devices 1 --precision 16 --model.resize_type pi
+--model.weights vit_base_patch16_224.augreg_in21k_ft_in1k --data.root path/to/val/data/
+--data.num_classes 1000 --model.patch_size 20 --data.size 224 --data.crop_pct 0.9 
+--data.mean "[0.5,0.5,0.5]" --data.std "[0.5,0.5,0.5]" --data.batch_size 256
+```
+- `--model.weights` should correspond to a `timm` model name.
+- The `--data.root` directory should be organized in the [TorchVision ImageFolder](https://pytorch.org/vision/stable/generated/torchvision.datasets.ImageFolder.html) structure. Alternatively, an LMDB file can be used by setting `--data.is_lmdb True` and having `--data.root` point to the `.lmdb` file.
+- To accurately compare to `timm`'s [baseline results](https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv), make sure that 
+`--data.size`, `--data.crop_pct`, `--data.interpolation` (all listed [here](https://github.com/huggingface/pytorch-image-models/blob/main/results/results-imagenet.csv)), `--data.mean`, and `--data.std` (in general found [here](https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py#L861)) are correct for the model. `--data.mean imagenet` and `--data.mean clip` can be set to use the respective default values (same for `--data.std`).
+- Run `python eval.py --help` for a list and descriptions for all arguments.
+    
 
 ## Experiments
 The following experiments test using PI-resizing to change the patch size of standard ViT models during evaluation. All models have been fine-tuned on ImageNet-1k with a fixed patch size and are evaluated with different patch sizes.
 
 #### Adjusting patch size and freezing image size to 224
 <p align="center">
-<img src="assets/ps.png" width="100%" style={text-align: center;}/>
+<img src="https://raw.githubusercontent.com/bwconrad/flexivit/main/assets/ps.png" width="100%" style={text-align: center;}/>
 </p>
 
 <details>
@@ -80,7 +143,7 @@ The following experiments test using PI-resizing to change the patch size of sta
 - Maintaining the same number of tokens as during training
 
 <p align="center">
-<img src="assets/ps-is.png" width="100%" style={text-align: center;}/>
+<img src="https://raw.githubusercontent.com/bwconrad/flexivit/main/assets/ps-is.png" width="100%" style={text-align: center;}/>
 </p>
 
 
