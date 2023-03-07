@@ -30,20 +30,20 @@ from flexivit_pytorch import FlexiVisionTransformer
 net = FlexiVisionTransformer(
     img_size=240,
     base_patch_size=32,
+    patch_size_seq=(8, 10, 12, 15, 16, 20, 14, 30, 40, 48),
+    base_pos_embed_size=7,
     num_classes=1000,
     embed_dim=768,
     depth=12,
     num_heads=12,
     mlp_ratio=4,
-    patch_size_seq=(8, 10, 12, 15, 16, 20, 14, 30, 40, 48),
-    base_pos_embed_size=7,
 )
 
 img = torch.randn(1, 3, 240, 240)
 preds = net(x)
 ```
 
-You can also use default network configurations with:
+You can also initialize default network configurations:
 
 ```python
 from flexivit_pytorch import (flexivit_base, flexivit_huge, flexivit_large,
@@ -58,8 +58,8 @@ net = flexivit_huge()
 
 #### Resizing Pretrained Model Weights
 
-You can resize the patch embedding layer of a standard pretrained vision transformer to any patch size. A basic example 
-of doing this with the `timm` library is the following:
+The patch embedding layer of a standard pretrained vision transformer can be resized to any patch size using the `pi_resize_patch_embed()` function. A example 
+doing this with the `timm` library is the following:
 
 ```python
 from timm import create_model
@@ -76,14 +76,14 @@ state_dict["patch_embed.proj.weight"] = pi_resize_patch_embed(
     patch_embed=state_dict["patch_embed.proj.weight"], new_patch_size=new_patch_size
 )
 
-# Adjust the position embedding
+# Interpolate the position embedding size
 image_size = 224
 grid_size = image_size // new_patch_size[0]
 state_dict["pos_embed"] = resample_abs_pos_embed(
     posemb=state_dict["pos_embed"], new_size=[grid_size, grid_size]
 )
 
-# Load new weights into model with target image and patch sizes
+# Load the new weights into a model with the target image and patch sizes
 net = create_model(
     "vit_base_patch16_224", img_size=image_size, patch_size=new_patch_size
 )
@@ -99,10 +99,10 @@ or to a patch size of height 10 and width 15:
 ```
 python convert_patch_embed.py -i vit-16.pt -o vit-10-15.pt -n patch_embed.proj.weight -ps 10 15
 ```
-- __Note:__ The `-n` argument corresponds to the name of patch embedding weights in the checkpoint's state dict.
+- The `-n` argument should correspond to the name of the patch embedding weights in the checkpoint's state dict.
 
-### Evaluation Script
-`eval.py` can be used to evaluate pretrained Vision Transformer models with different patch sizes. For example, to evaluate a ViT-B/16 at a patch size of 20 on the ImageNet-1k validation set, you can run:
+### Evaluating at Different Patch Sizes
+`eval.py` can be used to evaluate pretrained Vision Transformer models at different patch sizes. For example, to evaluate a ViT-B/16 at a patch size of 20 on the ImageNet-1k validation set, you can run:
 ```
 python eval.py --accelerator gpu --devices 1 --precision 16 --model.resize_type pi
 --model.weights vit_base_patch16_224.augreg_in21k_ft_in1k --data.root path/to/val/data/
