@@ -40,7 +40,7 @@ net = FlexiVisionTransformer(
 )
 
 img = torch.randn(1, 3, 240, 240)
-preds = net(x)
+preds = net(img)
 ```
 
 You can also initialize default network configurations:
