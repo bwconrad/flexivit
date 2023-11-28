@@ -4,7 +4,7 @@ lmdb==1.4.0
 numpy==1.24.2
 pandas==1.5.3
 Pillow==10.0.1
-pyarrow==11.0.0
+pyarrow==14.0.1
 pytest==7.2.2
 pytorch_lightning[extra]==1.9.3
 wandb==0.13.10
